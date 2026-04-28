@@ -1,0 +1,157 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  RESIDENT
+  STAFF
+  ADMIN
+}
+
+enum TaskPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum TaskStatus {
+  OPEN
+  IN_REVIEW
+  ASSIGNED
+  IN_PROGRESS
+  RESOLVED
+  CLOSED
+  CANCELLED
+  REOPENED
+}
+
+model User {
+  id            String         @id @default(uuid())
+  email         String         @unique
+  passwordHash  String
+  name          String
+  role          UserRole       @default(RESIDENT)
+  apartmentNo   String?
+  phone         String?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  refreshTokens RefreshToken[]
+  createdTasks  Task[]         @relation("ResidentTasks")
+  assignedTasks Task[]         @relation("AssignedTasks")
+  comments      Comment[]
+  attachments   Attachment[]
+  statusChanges TaskStatusHistory[] @relation("StatusChangedBy")
+
+  @@index([role])
+}
+
+model RefreshToken {
+  id        String   @id @default(uuid())
+  tokenHash String   @unique
+  expiresAt DateTime
+  revokedAt DateTime?
+  createdAt DateTime @default(now())
+
+  userId String
+  user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+model Category {
+  id        String   @id @default(uuid())
+  name      String   @unique
+  slaHours  Int
+  color     String
+  icon      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  tasks     Task[]
+}
+
+model Task {
+  id              String              @id @default(uuid())
+  description     String
+  priority        TaskPriority
+  status          TaskStatus          @default(OPEN)
+  apartmentNo     String
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+  resolvedAt      DateTime?
+  closedAt        DateTime?
+  cancelledAt     DateTime?
+
+  residentId      String
+  resident        User                @relation("ResidentTasks", fields: [residentId], references: [id], onDelete: Cascade)
+  assignedStaffId String?
+  assignedStaff   User?               @relation("AssignedTasks", fields: [assignedStaffId], references: [id], onDelete: SetNull)
+  categoryId      String
+  category        Category            @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  statusHistory   TaskStatusHistory[]
+  comments        Comment[]
+  attachments     Attachment[]
+
+  @@index([residentId])
+  @@index([assignedStaffId])
+  @@index([categoryId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model TaskStatusHistory {
+  id          String     @id @default(uuid())
+  fromStatus  TaskStatus?
+  toStatus    TaskStatus
+  changedAt   DateTime   @default(now())
+  note        String?
+
+  taskId      String
+  task        Task       @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  changedById String
+  changedBy   User       @relation("StatusChangedBy", fields: [changedById], references: [id], onDelete: Restrict)
+
+  @@index([taskId, changedAt])
+}
+
+model Comment {
+  id         String      @id @default(uuid())
+  body       String
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+
+  taskId     String
+  task       Task        @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  authorId   String
+  author     User        @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  attachments Attachment[]
+
+  @@index([taskId, createdAt])
+}
+
+model Attachment {
+  id           String    @id @default(uuid())
+  originalName String
+  fileName     String
+  mimeType     String
+  size         Int
+  path         String
+  createdAt    DateTime  @default(now())
+
+  taskId       String?
+  task         Task?     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  commentId    String?
+  comment      Comment?  @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  uploadedById String
+  uploadedBy   User      @relation(fields: [uploadedById], references: [id], onDelete: Cascade)
+
+  @@index([taskId])
+  @@index([commentId])
+  @@index([uploadedById])
+}
