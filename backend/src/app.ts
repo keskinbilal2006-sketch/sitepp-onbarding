@@ -81,6 +81,7 @@ app.use('/api/users', moduleRouters.users);
 app.use('/api/categories', moduleRouters.categories);
 app.use('/api/tasks', moduleRouters.tasks);
 app.use('/api/comments', moduleRouters.comments);
+app.use('/api/dashboard', moduleRouters.dashboard);
 app.use('/api/attachments', moduleRouters.attachments);
 app.use('/api/reports', moduleRouters.reports);
 

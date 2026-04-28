@@ -2,30 +2,15 @@
 
 import Link from 'next/link';
 
-import { useMeQuery } from '../../../features/auth/hooks/use-me-query';
-import { useReportsOverviewQuery } from '../../../features/reports/hooks/use-reports-overview-query';
-import type { TaskPriority, TaskStatus } from '../../../features/tasks/api/tasks.api';
-import { useTasksQuery } from '../../../features/tasks/hooks/use-tasks-query';
+import type { DashboardTaskItem } from '../../../features/dashboard/api/dashboard.api';
+import { useDashboardOverviewQuery } from '../../../features/dashboard/hooks/use-dashboard-overview-query';
 import { getApiErrorMessage } from '../../../lib/api-client';
 import { formatDateTime, priorityLabel, statusLabel } from '../../../lib/format';
 
-const now = new Date();
-const currentPeriod = {
-  month: now.getMonth() + 1,
-  year: now.getFullYear(),
-};
-
 export default function DashboardPage() {
-  const meQuery = useMeQuery();
-  const tasksQuery = useTasksQuery({ page: 1, pageSize: 50 });
-  const reportsQuery = useReportsOverviewQuery(currentPeriod, meQuery.data?.role === 'ADMIN');
-
-  const tasks = tasksQuery.data?.items ?? [];
-  const activeTasks = tasks.filter((task) => !['CLOSED', 'CANCELLED'].includes(task.status));
-  const overdueTasks = tasks.filter((task) => task.isOverdue);
-  const resolvedTasks = tasks.filter((task) => task.status === 'RESOLVED' || task.status === 'CLOSED');
-  const urgentTasks = tasks.filter((task) => task.priority === 'URGENT' || task.priority === 'HIGH');
-  const role = meQuery.data?.role;
+  const dashboardQuery = useDashboardOverviewQuery();
+  const overview = dashboardQuery.data;
+  const role = overview?.role;
 
   return (
     <section className="space-y-4">
@@ -40,35 +25,38 @@ export default function DashboardPage() {
         </p>
       </div>
 
-      {tasksQuery.isError ? (
+      {dashboardQuery.isError ? (
         <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
-          {getApiErrorMessage(tasksQuery.error)}
+          {getApiErrorMessage(dashboardQuery.error)}
         </div>
       ) : null}
 
+      {dashboardQuery.isLoading ? <p className="text-sm text-slate-500">Dashboard yukleniyor...</p> : null}
+
       <div className="grid grid-cols-1 gap-3 md:grid-cols-4">
-        <MetricCard label="Aktif Talep" value={activeTasks.length} />
-        <MetricCard label="Geciken" value={overdueTasks.length} tone={overdueTasks.length ? 'danger' : 'normal'} />
-        <MetricCard label="Cozulen/Kapanan" value={resolvedTasks.length} />
-        <MetricCard label="Yuksek Oncelik" value={urgentTasks.length} tone={urgentTasks.length ? 'warning' : 'normal'} />
+        <MetricCard label="Aktif Talep" value={overview?.summary.activeTasks ?? 0} />
+        <MetricCard
+          label="Geciken"
+          value={overview?.summary.overdueTasks ?? 0}
+          tone={overview?.summary.overdueTasks ? 'danger' : 'normal'}
+        />
+        <MetricCard label="Cozulen/Kapanan" value={overview?.summary.resolvedOrClosedTasks ?? 0} />
+        <MetricCard
+          label="Yuksek Oncelik"
+          value={overview?.summary.highPriorityTasks ?? 0}
+          tone={overview?.summary.highPriorityTasks ? 'warning' : 'normal'}
+        />
       </div>
 
-      {role === 'ADMIN' && reportsQuery.data ? (
+      {role === 'ADMIN' && overview ? (
         <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
           <MetricCard
             label="SLA Basari"
-            value={`%${reportsQuery.data.slaPerformance.onTimeRate}`}
-            tone={reportsQuery.data.slaPerformance.overdue ? 'warning' : 'normal'}
+            value={overview.summary.slaOnTimeRate === null ? '-' : `%${overview.summary.slaOnTimeRate}`}
+            tone={overview.summary.overdueTasks ? 'warning' : 'normal'}
           />
-          <MetricCard label="Aylik Cozulen" value={reportsQuery.data.resolvedCount} />
-          <MetricCard
-            label="Ortalama Cozum"
-            value={
-              reportsQuery.data.averageResolutionHours === null
-                ? '-'
-                : `${reportsQuery.data.averageResolutionHours} saat`
-            }
-          />
+          <MetricCard label="Son Talep" value={overview.recentTasks.length} />
+          <MetricCard label="Geciken Liste" value={overview.overdueTasks.length} />
         </div>
       ) : null}
 
@@ -81,11 +69,10 @@ export default function DashboardPage() {
             </Link>
           </div>
           <div className="mt-3 space-y-2">
-            {tasksQuery.isLoading ? <p className="text-sm text-slate-500">Talepler yukleniyor...</p> : null}
-            {!tasksQuery.isLoading && overdueTasks.length === 0 ? (
+            {!dashboardQuery.isLoading && overview?.overdueTasks.length === 0 ? (
               <p className="text-sm text-slate-500">Geciken talep yok.</p>
             ) : null}
-            {overdueTasks.slice(0, 5).map((task) => (
+            {overview?.overdueTasks.map((task) => (
               <TaskRow key={task.id} task={task} />
             ))}
           </div>
@@ -94,11 +81,10 @@ export default function DashboardPage() {
         <div className="rounded-lg border border-slate-200 p-3">
           <h2 className="text-base font-semibold text-slate-900">Son Talepler</h2>
           <div className="mt-3 space-y-2">
-            {tasksQuery.isLoading ? <p className="text-sm text-slate-500">Talepler yukleniyor...</p> : null}
-            {!tasksQuery.isLoading && tasks.length === 0 ? (
+            {!dashboardQuery.isLoading && overview?.recentTasks.length === 0 ? (
               <p className="text-sm text-slate-500">Henuz talep yok.</p>
             ) : null}
-            {tasks.slice(0, 5).map((task) => (
+            {overview?.recentTasks.map((task) => (
               <TaskRow key={task.id} task={task} />
             ))}
           </div>
@@ -132,17 +118,7 @@ function MetricCard({
   );
 }
 
-function TaskRow({
-  task,
-}: {
-  task: {
-    id: string;
-    description: string;
-    status: TaskStatus;
-    priority: TaskPriority;
-    deadlineAt: string;
-  };
-}) {
+function TaskRow({ task }: { task: DashboardTaskItem }) {
   return (
     <Link
       href={`/tasks/${task.id}`}

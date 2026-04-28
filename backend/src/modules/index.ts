@@ -2,6 +2,7 @@ import { attachmentsRouter } from './attachments/attachments.routes.js';
 import { authRouter } from './auth/auth.routes.js';
 import { categoriesRouter } from './categories/categories.routes.js';
 import { commentsRouter } from './comments/comments.routes.js';
+import { dashboardRouter } from './dashboard/dashboard.routes.js';
 import { reportsRouter } from './reports/reports.routes.js';
 import { tasksRouter } from './tasks/tasks.routes.js';
 import { usersRouter } from './users/users.routes.js';
@@ -13,6 +14,7 @@ export const moduleRouters = {
   categories: categoriesRouter,
   tasks: tasksRouter,
   comments: commentsRouter,
+  dashboard: dashboardRouter,
   attachments: attachmentsRouter,
   reports: reportsRouter,
 };
