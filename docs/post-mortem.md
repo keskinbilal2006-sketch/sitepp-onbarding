@@ -27,15 +27,12 @@ Sitepp MVP; rol bazli kullanici sistemi, talep yasam dongusu, durum gecisleri, a
 - Seed verilerini ilk gunden production model kurallarina birebir uygun yazardim; id alanlari UUID ise seed de UUID olmali.
 - Frontend hata mesajlarini daha erken detaylandirirdim. Genel "Something went wrong" debug surecini uzatti.
 - Staff atama UI'inda kullanicidan direkt UUID istemek yerine gorevli secim dropdown'u yapardim.
-- Users modulu placeholder kaldigi icin admin tarafinda personel yonetimi eksik. Bunu MVP tesliminden once tamamlamak daha iyi olurdu.
+- Staff atama UI'inda gorevli secimi sonradan dropdown'a cevrildi. Ilk MVP'de manuel UUID istemek kullanici deneyimini zayiflatti.
 
 ## Bilinen Eksikler
 
-- `GET /api/users` henuz `501 NotImplemented` donuyor.
-- Staff atama ekrani gorevli listesinden secim yaptirmiyor; manuel UUID bekliyor.
-- Frontend detay sayfasinda image render icin `next/image` yerine su an `<img>` kullaniliyor ve lint uyarisi veriyor.
 - API dokumani manuel Markdown formatinda; Swagger/OpenAPI henuz yok.
-- Docker Compose sadece PostgreSQL iceriyor; backend ve frontend container'lari compose'a eklenmedi.
+- Docker Compose backend/frontend servislerini de iceriyor, fakat production secret degerleri hala ornek degerlerden ayrilmali.
 
 ## Ogrendiklerim
 
@@ -47,8 +44,6 @@ Sitepp MVP; rol bazli kullanici sistemi, talep yasam dongusu, durum gecisleri, a
 
 ## Sonraki Teknik Adimlar
 
-- Users/staff backend endpointlerini tamamla.
-- Staff atama UI'ini dropdown ile kullanilabilir hale getir.
-- `/ready` endpointi ile DB readiness kontrolu ekle.
 - Frontend hata mesajlarini API `details` alanini kullanacak sekilde iyilestir.
-- Docker Compose'a backend ve frontend servislerini ekle.
+- Swagger/OpenAPI dokumantasyonu ekle.
+- Production secret ve deploy env degerlerini ornek degerlerden ayir.

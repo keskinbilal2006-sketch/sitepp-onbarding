@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import { useParams } from 'next/navigation';
 import { useState, type ChangeEvent } from 'react';
 
@@ -12,6 +13,7 @@ import type { TaskStatus } from '../../../../features/tasks/api/tasks.api';
 import { useTaskDetailQuery } from '../../../../features/tasks/hooks/use-task-detail-query';
 import { useUpdateTaskStatusMutation } from '../../../../features/tasks/hooks/use-update-task-status-mutation';
 import { getAllowedNextStatuses } from '../../../../features/tasks/lib/status-transition';
+import { useUsersQuery } from '../../../../features/users/hooks/use-users-query';
 import { getApiErrorMessage } from '../../../../lib/api-client';
 import { buildUploadUrl, formatFileSize } from '../../../../lib/files';
 import { formatDateTime, priorityLabel, statusLabel } from '../../../../lib/format';
@@ -29,6 +31,14 @@ export default function TaskDetailPage() {
   const taskQuery = useTaskDetailQuery(taskId);
   const updateStatusMutation = useUpdateTaskStatusMutation(taskId);
   const createCommentMutation = useCreateCommentMutation(taskId);
+  const staffQuery = useUsersQuery(
+    {
+      role: 'STAFF',
+      page: 1,
+      pageSize: 100,
+    },
+    meQuery.data?.role === 'ADMIN'
+  );
   const [selectedStatus, setSelectedStatus] = useState<TaskStatus | ''>('');
   const [statusNote, setStatusNote] = useState('');
   const [assignedStaffId, setAssignedStaffId] = useState('');
@@ -200,13 +210,25 @@ export default function TaskDetailPage() {
 
             {selectedStatus === 'ASSIGNED' ? (
               <label className="block">
-                <span className="mb-1 block text-sm text-slate-700">Gorevli ID (STAFF kullanici UUID)</span>
-                <input
+                <span className="mb-1 block text-sm text-slate-700">Gorevli</span>
+                <select
                   value={assignedStaffId}
                   onChange={(event) => setAssignedStaffId(event.target.value)}
-                  placeholder="ornek: 00000000-0000-0000-0000-000000000000"
-                  className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none ring-brand-500 focus:ring-2"
-                />
+                  disabled={staffQuery.isLoading}
+                  className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none ring-brand-500 focus:ring-2 disabled:opacity-60"
+                >
+                  <option value="">
+                    {staffQuery.isLoading ? 'Gorevliler yukleniyor...' : 'Gorevli sec'}
+                  </option>
+                  {staffQuery.data?.items.map((staff) => (
+                    <option key={staff.id} value={staff.id}>
+                      {staff.name} - {staff.activeAssignedTaskCount} aktif is
+                    </option>
+                  ))}
+                </select>
+                {staffQuery.isError ? (
+                  <p className="mt-1 text-sm text-red-600">{getApiErrorMessage(staffQuery.error)}</p>
+                ) : null}
               </label>
             ) : null}
 
@@ -230,7 +252,11 @@ export default function TaskDetailPage() {
             <button
               type="button"
               onClick={handleUpdateStatus}
-              disabled={updateStatusMutation.isPending || !selectedStatus}
+              disabled={
+                updateStatusMutation.isPending ||
+                !selectedStatus ||
+                (selectedStatus === 'ASSIGNED' && !assignedStaffId)
+              }
               className="rounded-lg bg-brand-500 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700 disabled:opacity-60"
             >
               {updateStatusMutation.isPending ? 'Guncelleniyor...' : 'Durumu Guncelle'}
@@ -317,9 +343,12 @@ export default function TaskDetailPage() {
                 <li key={file.id}>
                   {file.mimeType.startsWith('image/') ? (
                     <a href={buildUploadUrl(file.fileName)} target="_blank" rel="noreferrer">
-                      <img
+                      <Image
                         src={buildUploadUrl(file.fileName)}
                         alt={file.originalName}
+                        width={96}
+                        height={96}
+                        unoptimized
                         className="mb-1 h-24 w-24 rounded-md border border-slate-200 object-cover"
                       />
                     </a>
@@ -354,9 +383,12 @@ export default function TaskDetailPage() {
                       <li key={file.id}>
                         {file.mimeType.startsWith('image/') ? (
                           <a href={buildUploadUrl(file.fileName)} target="_blank" rel="noreferrer">
-                            <img
+                            <Image
                               src={buildUploadUrl(file.fileName)}
                               alt={file.originalName}
+                              width={80}
+                              height={80}
+                              unoptimized
                               className="mb-1 h-20 w-20 rounded-md border border-slate-200 object-cover"
                             />
                           </a>

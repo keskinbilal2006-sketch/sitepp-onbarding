@@ -66,6 +66,25 @@ npm.cmd run dev
 
 Backend varsayilan olarak `http://localhost:4000`, frontend `http://localhost:3000` adresinde calisir.
 
+## Docker Compose Ile Tam Calistirma
+
+Compose dosyasi PostgreSQL, backend ve frontend servislerini birlikte tanimlar:
+
+```powershell
+docker compose up --build
+```
+
+Bu komut:
+- PostgreSQL'i `localhost:5432`
+- Backend'i `localhost:4000`
+- Frontend'i `localhost:3000`
+
+adreslerinde calistirir. Backend container baslarken `prisma migrate deploy` calistirir. Seed verisi istenirse ayrica calistirilmalidir:
+
+```powershell
+docker compose exec backend npm run seed
+```
+
 ## Seed Hesaplari
 
 Tum seed hesaplarinin sifresi: `Sitepp123`

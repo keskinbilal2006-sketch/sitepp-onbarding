@@ -24,6 +24,7 @@ Hata formati:
 | Method | Path | Auth | Aciklama |
 | --- | --- | --- | --- |
 | GET | `/health` | Hayir | API ayakta mi kontrol eder. DB kontrolu yapmaz. |
+| GET | `/ready` | Hayir | API ve PostgreSQL baglantisi hazir mi kontrol eder. |
 
 ## Auth
 
@@ -146,8 +147,27 @@ month=4&year=2026
 
 ## Users
 
-| Method | Path | Auth | Durum |
-| --- | --- | --- | --- |
-| GET | `/api/users` | Hayir | Placeholder, `501 NotImplemented` doner. |
+| Method | Path | Auth | Roller | Aciklama |
+| --- | --- | --- | --- | --- |
+| GET | `/api/users` | Evet | `ADMIN` | Kullanici listesini dondurur. Staff atama ve personel ekraninda kullanilir. |
 
-Kullanici yonetimi endpointleri MVP UI kapsaminda gorunse de backend tarafinda henuz tamamlanmadi.
+Query:
+
+```text
+role=STAFF&search=ali&page=1&pageSize=50
+```
+
+Response item alanlari:
+
+```json
+{
+  "id": "00000000-0000-0000-0000-000000000000",
+  "email": "gorevli@sitepp.test",
+  "name": "Ali Gorevli",
+  "role": "STAFF",
+  "apartmentNo": null,
+  "phone": "5550000002",
+  "createdAt": "2026-04-27T12:00:00.000Z",
+  "activeAssignedTaskCount": 2
+}
+```

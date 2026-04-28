@@ -16,6 +16,7 @@ export function useUpdateTaskStatusMutation(taskId: string) {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ['tasks', 'detail', taskId] }),
         queryClient.invalidateQueries({ queryKey: ['tasks', 'list'] }),
+        queryClient.invalidateQueries({ queryKey: ['users', 'list'] }),
       ]);
     },
   });

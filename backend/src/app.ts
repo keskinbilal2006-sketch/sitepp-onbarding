@@ -7,6 +7,7 @@ import helmet from 'helmet';
 
 import { env } from './config/env.js';
 import { requestLogger } from './lib/logger.js';
+import { prisma } from './lib/prisma.js';
 import { errorHandler, notFoundHandler } from './middleware/error.middleware.js';
 import { moduleRouters } from './modules/index.js';
 
@@ -58,6 +59,20 @@ app.get('/health', (_req, res) => {
     uptimeSeconds: Number(process.uptime().toFixed(0)),
     timestamp: new Date().toISOString(),
   });
+});
+
+app.get('/ready', async (_req, res, next) => {
+  try {
+    await prisma.$queryRaw`SELECT 1`;
+    res.status(200).json({
+      status: 'ok',
+      service: 'sitepp-backend',
+      database: 'ok',
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error) {
+    next(error);
+  }
 });
 
 // Her modul kendi route grubunu yonetir; app.ts sadece ana baglanti noktasidir.
